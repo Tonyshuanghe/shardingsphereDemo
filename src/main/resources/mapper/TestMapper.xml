@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.dao.TestMapper">
+     <sql id="columns">
+    	a.id,
+		a.name,
+		a.created_date as createdDate
+    </sql>
+     
+    <select id="getById" resultType="com.example.entity.Test">
+     select <include refid="columns"/>
+     from t_test a
+     where a.id = #{id}
+    </select>
+    
+    <select id="queryList" resultType="com.example.entity.Test">
+      select <include refid="columns"/>
+      from t_test a
+      order by a.created_date desc
+    </select>
+    
+    <insert id="insert">
+     insert into T_TEST (
+	     id,
+		 name,
+		 created_date
+      ) values(
+      	 #{id},
+		 #{name},
+		 #{createdDate}
+        );
+    </insert>
+</mapper>

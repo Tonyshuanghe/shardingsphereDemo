@@ -1,0 +1,50 @@
+mode:
+  type: Standalone
+  repository:
+    type: JDBC
+
+dataSources:
+  ## 使用 druid 连接池时用 url 代替 jdbcUrl
+  ## druid  com.alibaba.druid.pool.DruidDataSource
+  ## hikari com.zaxxer.hikari.HikariDataSource
+  ds:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: dm.jdbc.driver.DmDriver
+    jdbcUrl: jdbc:dm://192.168.10.240:5236/mydb
+    username: SYSDBA
+    password: Bfz@1314.
+    #driverClassName: com.mysql.cj.jdbc.Driver
+    #dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    #jdbcUrl: jdbc:mysql://127.0.0.1:3306/demo_master?useUnicode=true&characterEncoding=utf-8&allowMultiQueries=true&serverTimezone=Asia/Shanghai
+    #username: root
+    #password: 123456
+    ## druid
+    initial-size: 5
+    max-active: 500
+    min-idle: 10
+    max-wait: 10000
+    validationQuery: SELECT 1
+### 表名大写，防止找不到表名
+rules:
+  - !SHARDING
+    tables:
+      T_TEST:
+        actualDataNodes: ds.T_TEST_$->{0..2}
+        tableStrategy:
+          standard:
+            shardingColumn: id
+            shardingAlgorithmName: t-test-inline
+    shardingAlgorithms:
+      t-test-inline:
+        type: INLINE
+        props:
+          algorithm-expression: T_TEST_$->{id % 3}
+    keyGenerators:
+      snowflake_generator:
+        type: SNOWFLAKE
+
+props:
+  sql-show: true
+#transaction:
+#  defaultType: XA
+#  providerType: Atomikos
