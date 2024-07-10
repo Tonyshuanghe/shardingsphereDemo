@@ -44,7 +44,7 @@ rules:
         type: SNOWFLAKE
 
 props:
-  sql-show: true
+  sql-show: false
 #transaction:
 #  defaultType: XA
 #  providerType: Atomikos

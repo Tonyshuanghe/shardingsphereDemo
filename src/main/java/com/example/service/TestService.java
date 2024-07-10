@@ -1,6 +1,6 @@
 package com.example.service;
 
-import com.example.entity.Test;
+import com.example.domain.Test;
 import com.example.query.TestQuery;
 
 import java.util.List;

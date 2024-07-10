@@ -1,6 +1,6 @@
 package com.example.controller;
 
-import com.example.entity.Test;
+import com.example.domain.Test;
 import com.example.query.TestQuery;
 import com.example.service.TestService;
 import org.springframework.beans.factory.annotation.Autowired;

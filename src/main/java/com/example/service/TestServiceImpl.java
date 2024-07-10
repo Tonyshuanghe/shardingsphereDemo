@@ -1,7 +1,8 @@
 package com.example.service;
 
-import com.example.dao.TestMapper;
-import com.example.entity.Test;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.example.mapper.TestMapper;
+import com.example.domain.Test;
 import com.example.query.TestQuery;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,6 @@ public class TestServiceImpl implements TestService {
 
     @Override
     public List<Test> queryList(TestQuery query) {
-        return mapper.queryList(query);
+        return mapper.selectList(Wrappers.lambdaQuery());
     }
 }

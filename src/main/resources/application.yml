@@ -7,6 +7,35 @@ logging:
 mybatis:
   typeAliasesPackage: com.example.entity
   mapper-locations: classpath*:mapper/*.xml
+
+# MyBatisPlus配置
+# https://baomidou.com/config/
+mybatis-plus:
+  # 多包名使用 例如 cn.bds.**.mapper,org.xxx.**.mapper
+  mapperPackage: com.**.mapper
+  # 对应的 XML 文件位置
+  mapperLocations: classpath*:mapper/**/*Mapper.xml
+  # 实体扫描，多个package用逗号或者分号分隔
+  typeAliasesPackage: com.**.domain
+  #  configuration:
+  #    # 更详细的日志输出 会有性能损耗 org.apache.ibatis.logging.stdout.StdOutImpl
+  #    logImpl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    dbConfig:
+      # 主键类型
+      # AUTO 自增 NONE 空 INPUT 用户输入 ASSIGN_ID 雪花 ASSIGN_UUID 唯一 UUID
+      # 如需改为自增 需要将数据库表全部设置为自增
+      idType: ASSIGN_ID
+      # 逻辑已删除值
+      logicDeleteValue: 1
+      # 逻辑未删除值
+      logicNotDeleteValue: 0
+  configuration:
+    # MyBatis 自动映射时未知列或未知属性处理策
+    # NONE：不做处理 WARNING：打印相关警告 FAILING：抛出异常和详细信息
+    autoMappingUnknownColumnBehavior: NONE
+    logImpl: org.apache.ibatis.logging.stdout.StdOutImpl
+
 spring:
   profiles:
     active: dev
