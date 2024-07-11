@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 
@@ -24,7 +25,7 @@ public class TestController {
         Test order = new Test();
         order.setId(System.currentTimeMillis());
         order.setName("test-" + System.currentTimeMillis());
-        order.setCreatedDate(new Date());
+        order.setCreatedDate(LocalDateTime.of(2024,5,6,7,8,1));
         boolean bl = orderService.add(order);
         return bl ? "success" : "fail";
     }

@@ -117,7 +117,12 @@ public final class DmMetaDataLoader implements DialectMetaDataLoader {
         boolean caseSensitive = null != collation && collation.endsWith("_CS");
         boolean isVisible = "NO".equals(resultSet.getString("HIDDEN_COLUMN"));
         boolean nullable = "Y".equals(resultSet.getString("NULLABLE"));
-        return new ColumnMetaData(columnName, dataTypeMap.get(dataType), primaryKey, generated, caseSensitive, isVisible, false, nullable);
+        Integer i = dataTypeMap.get(dataType);
+        if(Objects.isNull(i)){
+            //默认成字符串
+            i = 12;
+        }
+        return new ColumnMetaData(columnName,i , primaryKey, generated, caseSensitive, isVisible, false, nullable);
     }
 
     private String getOriginalDataType(final String dataType) {
