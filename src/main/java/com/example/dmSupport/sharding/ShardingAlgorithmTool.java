@@ -1,9 +1,11 @@
 package com.example.dmSupport.sharding;
 
 import cn.hutool.extra.spring.SpringUtil;
+import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import java.sql.*;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -23,7 +25,28 @@ public class ShardingAlgorithmTool {
 
     /** 表分片符号，例：t_user_202201 中，分片符号为 "_" */
     private static final String TABLE_SPLIT_SYMBOL = "_";
-    public static final String MASTER_DB = "BDS_DB";
+    private static Connection connection = null;
+    private static Statement statement = null;
+
+    private static String dbName = null;
+
+    static {
+        try {
+            String url = SpringUtil.getProperty("subDb.jdbcUrl"); // 数据库 URL
+            String username = SpringUtil.getProperty("subDb.username"); // 数据库用户名
+            String password = SpringUtil.getProperty("subDb.password"); // 数据库密码
+            String classDriver = SpringUtil.getProperty("subDb.driverClassName");
+            dbName = SpringUtil.getProperty("subDb.dbName");
+            // 1. 加载驱动程序
+            Class.forName(classDriver);
+            // 2. 建立连接
+            connection = DriverManager.getConnection(url, username, password);
+            // 3. 创建 Statement 对象
+            statement = connection.createStatement();
+        } catch (Exception e) {
+        }
+    }
+
     /**
      * 获取所有表名
      * @return 表名集合
@@ -33,16 +56,11 @@ public class ShardingAlgorithmTool {
         List<String> tableNames = new ArrayList<>();
         JdbcTemplate jdbcTemplate = SpringUtil.getBean(JdbcTemplate.class);
         try {
-            String s = "SELECT table_name FROM ALL_TABLES WHERE table_name LIKE '" + logicTableName + TABLE_SPLIT_SYMBOL + "%' and OWNER = '" + MASTER_DB + "'";
-            List<Map<String, Object>> maps = jdbcTemplate.queryForList(s);
-            for (Map<String, Object> map : maps) {
-                map.forEach((k,v)->{
-                    String tableName = v.toString();
-                    // 匹配分表格式 例：^(t\_contract_\d{6})$
-                    if (tableName != null && tableName.matches(String.format("^(%s\\d{6})$", logicTableName + TABLE_SPLIT_SYMBOL))) {
-                        tableNames.add(tableName);
-                    }
-                });
+            for (String tableName : getTableNameList(logicTableName + TABLE_SPLIT_SYMBOL)) {
+                // 匹配分表格式 例：^(t\_contract_\d{6})$
+                if (tableName != null && tableName.matches(String.format("^(%s\\d{6})$", logicTableName + TABLE_SPLIT_SYMBOL))) {
+                    tableNames.add(tableName);
+                }
             }
         } catch (Exception e) {
             throw new IllegalArgumentException("数据库操作失败，请稍后重试");
@@ -80,12 +98,43 @@ public class ShardingAlgorithmTool {
 
         try  {
             for (String string : sqlList) {
-                SpringUtil.getBean(JdbcTemplate.class).execute(string);
+                executeSql(string);
             }
         } catch (Exception e) {
             log.error(">>>>>>>>>> 【ERROR】数据库操作失败，请稍后重试，原因：{}", e.getMessage(), e);
             throw new IllegalArgumentException("数据库操作失败，请稍后重试");
         }
     }
+
+    private static ResultSet executeSql(String sql) {
+        ResultSet resultSet = null;
+        try {
+            // 4. 执行查询
+            resultSet = statement.executeQuery(sql);
+        } catch (Exception e) {
+        }
+        return resultSet;
+    }
+
+
+    private static List<String> getTableNameList(String tableNamePre){
+        List<String> objects = Lists.newArrayList();
+        ResultSet resultSet = executeSql("SELECT table_name FROM ALL_TABLES WHERE table_name LIKE '" + tableNamePre + "%' and OWNER = '" + dbName + "'");
+        try {
+            while (resultSet.next()) {
+                String tableName = resultSet.getString("table_name");
+                objects.add(tableName);
+            }
+        } catch (Exception ex) {
+        } finally {
+            // 6. 关闭连接
+            try {
+                if (resultSet != null) resultSet.close();
+            } catch (SQLException e) {
+            }
+        }
+        return objects;
+    }
+
 
 }

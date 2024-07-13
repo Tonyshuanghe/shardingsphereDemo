@@ -33,6 +33,9 @@ dataSources:
 rules:
   - !SINGLE
       defaultDataSource: ds
+      tables:
+        - ds.* # 加载指定数据源中的全部单表
+        - dsSub.*
   - !SHARDING
     tables:
       T_TEST:

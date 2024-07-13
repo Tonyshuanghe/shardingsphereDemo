@@ -42,3 +42,9 @@ spring:
   datasource:
     url: jdbc:shardingsphere:classpath:sharding-tables.yaml
     driver-class-name: org.apache.shardingsphere.driver.ShardingSphereDriver
+subDb:
+  dbName: BDS_SUB_DB
+  driverClassName: ${SUB_DB_DRIVER_CLASS_NAME:dm.jdbc.driver.DmDriver}
+  jdbcUrl: ${SUB_DB_JDBC_URL:jdbc:dm://192.168.10.240:5236/BDS_SUB_DB}
+  username: ${SUB_DB_USERNAME:SYSDBA}
+  password: ${SUB_DB_PASSWORD:Bfz@1314.}
