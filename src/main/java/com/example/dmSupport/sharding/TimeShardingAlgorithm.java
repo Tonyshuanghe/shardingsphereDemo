@@ -164,13 +164,11 @@ public final class TimeShardingAlgorithm implements StandardShardingAlgorithm<Lo
         String resultTableName = logicTableName + "_" + dateTime.format(TABLE_SHARD_TIME_FORMATTER);
 
         // 检查是否需要初始化
-        if (collection.size() == 1) {
-            // 如果只有一个表，说明需要获取所有表名
+        if(autoTablesAmount == 0){
             List<String> allTableNameBySchema = ShardingAlgorithmTool.getAllTableNameBySchema(logicTableName);
             collection.clear();
             collection.addAll(allTableNameBySchema);
             autoTablesAmount = allTableNameBySchema.size();
-            return resultTableName;
         }
 
         return getShardingTableAndCreate(logicTableName, resultTableName, collection);
