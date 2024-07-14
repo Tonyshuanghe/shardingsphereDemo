@@ -35,7 +35,6 @@ rules:
       defaultDataSource: ds
       tables:
         - ds.* # 加载指定数据源中的全部单表
-        - dsSub.*
   - !SHARDING
     tables:
       T_TEST:
@@ -44,8 +43,6 @@ rules:
           standard:
             shardingColumn: created_date
             shardingAlgorithmName: t-test-inline
-      ALL_TABLES:
-        actualDataNodes: ds1.all_tables
     shardingAlgorithms:
       t-test-inline:
         type: CLASS_BASED
