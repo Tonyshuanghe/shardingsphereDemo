@@ -32,7 +32,7 @@ public class ShardingTablesLoadRunner implements CommandLineRunner {
     @Override
     public void run(String... args) {
         // 读取已有分表，进行缓存
-        SpringUtil.getBean(TestMapper.class).selectList(Wrappers.<Test>lambdaQuery().between(Test::getCreatedDate, LocalDateTime.of(2024,6,7,7,7,7),LocalDateTime.now()));
+        System.out.println();
         log.info(">>>>>>>>>> 【ShardingTablesLoadRunner】缓存已有分表成功 <<<<<<<<<<");
     }
 }

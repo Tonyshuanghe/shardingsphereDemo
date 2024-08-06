@@ -44,6 +44,7 @@ public class ShardingAlgorithmTool {
             // 3. 创建 Statement 对象
             statement = connection.createStatement();
         } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -85,7 +86,9 @@ public class ShardingAlgorithmTool {
 
         synchronized (logicTableName.intern()) {
             // 缓存中无此表，则建表并添加缓存
-            executeSql(Collections.singletonList("CREATE TABLE "+resultTableName+" AS SELECT * FROM "+logicTableName+" WHERE 1=2"));
+            String oracle = "CREATE TABLE " + resultTableName + " AS SELECT * FROM " + logicTableName + " WHERE 1=2";
+            String mysql = "CREATE TABLE IF NOT EXISTS `" + resultTableName + "` LIKE `" + logicTableName + "`;";
+            executeReBoolean(mysql);
         }
         return true;
     }
@@ -106,12 +109,24 @@ public class ShardingAlgorithmTool {
         }
     }
 
+    private static Boolean executeReBoolean(String sql) {
+        boolean f = false;
+        try {
+            // 4. 执行查询
+            f = statement.execute(sql);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return f;
+    }
+
     private static ResultSet executeSql(String sql) {
         ResultSet resultSet = null;
         try {
             // 4. 执行查询
             resultSet = statement.executeQuery(sql);
         } catch (Exception e) {
+            e.printStackTrace();
         }
         return resultSet;
     }
@@ -119,7 +134,9 @@ public class ShardingAlgorithmTool {
 
     private static List<String> getTableNameList(String tableNamePre){
         List<String> objects = Lists.newArrayList();
-        ResultSet resultSet = executeSql("SELECT table_name FROM ALL_TABLES WHERE table_name LIKE '" + tableNamePre + "%' and OWNER = '" + dbName + "'");
+        String mysql = "show TABLES like '" + tableNamePre + TABLE_SPLIT_SYMBOL + "%'";
+        String oracle = "SELECT table_name FROM ALL_TABLES WHERE table_name LIKE '" + tableNamePre + "%' and OWNER = '" + dbName + "'";
+        ResultSet resultSet = executeSql(mysql);
         try {
             while (resultSet.next()) {
                 String tableName = resultSet.getString("table_name");
