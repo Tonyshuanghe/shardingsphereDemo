@@ -3,15 +3,12 @@ package com.example.dmSupport.sharding;
 import cn.hutool.extra.spring.SpringUtil;
 import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.sql.*;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 /**
  * <p> @Title ShardingAlgorithmTool
@@ -24,9 +21,9 @@ import java.util.Map;
 public class ShardingAlgorithmTool {
 
     /** 表分片符号，例：t_user_202201 中，分片符号为 "_" */
-    private static final String TABLE_SPLIT_SYMBOL = "_";
+    public static final String TABLE_SPLIT_SYMBOL = "_";
     private static Connection connection = null;
-    private static Statement statement = null;
+   private static Statement statement = null;
 
     private static String dbName = null;
 
@@ -44,7 +41,6 @@ public class ShardingAlgorithmTool {
             // 3. 创建 Statement 对象
             statement = connection.createStatement();
         } catch (Exception e) {
-            e.printStackTrace();
         }
     }
 
@@ -53,9 +49,8 @@ public class ShardingAlgorithmTool {
      * @return 表名集合
      * @param logicTableName 逻辑表
      */
-    public static List<String> getAllTableNameBySchema(String logicTableName) {
+    public static synchronized List<String> getAllTableNameBySchema(String logicTableName) {
         List<String> tableNames = new ArrayList<>();
-        JdbcTemplate jdbcTemplate = SpringUtil.getBean(JdbcTemplate.class);
         try {
             for (String tableName : getTableNameList(logicTableName + TABLE_SPLIT_SYMBOL)) {
                 // 匹配分表格式 例：^(t\_contract_\d{6})$
@@ -79,18 +74,33 @@ public class ShardingAlgorithmTool {
     public static boolean createShardingTable(String logicTableName, String resultTableName) {
         // 根据日期判断，当前月份之后分表不提前创建
         String month = resultTableName.replace(logicTableName + TABLE_SPLIT_SYMBOL,"");
-        YearMonth shardingMonth = YearMonth.parse(month, DateTimeFormatter.ofPattern("yyyyMM"));
+        YearMonth shardingMonth = YearMonth.parse(month, DateTimeFormatter.ofPattern(TimeShardingAlgorithm.DATE_FORMAT));
         if (shardingMonth.isAfter(YearMonth.now())) {
             return false;
         }
 
-        synchronized (logicTableName.intern()) {
+        return createShardingTableExecute(logicTableName, resultTableName);
+    }
+
+    public static Boolean createShardingTableExecute(String logicTableName, String resultTableName) {
+        synchronized (resultTableName.intern()){
             // 缓存中无此表，则建表并添加缓存
+            String sql;
             String oracle = "CREATE TABLE " + resultTableName + " AS SELECT * FROM " + logicTableName + " WHERE 1=2";
-            String mysql = "CREATE TABLE IF NOT EXISTS `" + resultTableName + "` LIKE `" + logicTableName + "`;";
-            executeReBoolean(mysql);
+            sql = oracle;
+            return executeReBoolean(sql);
         }
-        return true;
+    }
+
+    private static Boolean executeReBoolean(String sql) {
+        boolean f = false;
+        try {
+            // 4. 执行查询
+            statement.execute(sql);
+            f = true;
+        } catch (Exception e) {
+        }
+        return f;
     }
 
     /**
@@ -109,17 +119,6 @@ public class ShardingAlgorithmTool {
         }
     }
 
-    private static Boolean executeReBoolean(String sql) {
-        boolean f = false;
-        try {
-            // 4. 执行查询
-            f = statement.execute(sql);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return f;
-    }
-
     private static ResultSet executeSql(String sql) {
         ResultSet resultSet = null;
         try {
@@ -134,24 +133,26 @@ public class ShardingAlgorithmTool {
 
     private static List<String> getTableNameList(String tableNamePre){
         List<String> objects = Lists.newArrayList();
-        String mysql = "show TABLES like '" + tableNamePre + TABLE_SPLIT_SYMBOL + "%'";
+        String sql;
         String oracle = "SELECT table_name FROM ALL_TABLES WHERE table_name LIKE '" + tableNamePre + "%' and OWNER = '" + dbName + "'";
-        ResultSet resultSet = executeSql(mysql);
+        sql = oracle;
+        ResultSet resultSet = executeSql(sql);
         try {
             while (resultSet.next()) {
-                String tableName = resultSet.getString("table_name");
+                String tableName = resultSet.getString(1);
                 objects.add(tableName);
             }
         } catch (Exception ex) {
+            ex.printStackTrace();
         } finally {
             // 6. 关闭连接
             try {
                 if (resultSet != null) resultSet.close();
             } catch (SQLException e) {
+                e.printStackTrace();
             }
         }
         return objects;
     }
-
 
 }

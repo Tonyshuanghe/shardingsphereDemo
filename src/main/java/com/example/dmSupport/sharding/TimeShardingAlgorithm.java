@@ -17,8 +17,8 @@
 
 package com.example.dmSupport.sharding;
 
+import com.google.common.collect.Maps;
 import com.google.common.collect.Range;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.shardingsphere.sharding.api.sharding.standard.PreciseShardingValue;
 import org.apache.shardingsphere.sharding.api.sharding.standard.RangeShardingValue;
@@ -41,10 +41,11 @@ import java.util.stream.Collectors;
 @Slf4j
 public final class TimeShardingAlgorithm implements StandardShardingAlgorithm<LocalDateTime>{
 
+    public static final String DATE_FORMAT = "yyyyMM";
     /**
      * 分片时间格式
      */
-    private static final DateTimeFormatter TABLE_SHARD_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyyMM");
+    public static final DateTimeFormatter TABLE_SHARD_TIME_FORMATTER = DateTimeFormatter.ofPattern(DATE_FORMAT);
 
     /**
      * 完整时间格式
@@ -57,8 +58,7 @@ public final class TimeShardingAlgorithm implements StandardShardingAlgorithm<Lo
     private final String TABLE_SPLIT_SYMBOL = "_";
 
 
-    @Getter
-    private Integer autoTablesAmount = 0;
+    private final static Map<String,Integer> autoTablesAmountMap = Maps.newConcurrentMap();
 
 
     public static LocalDateTime convertToLocalDateTime(Object obj) {
@@ -92,7 +92,13 @@ public final class TimeShardingAlgorithm implements StandardShardingAlgorithm<Lo
      * @return 存在于数据库中的真实表名集合
      */
     public Set<String> getShardingTablesAndCreate(String logicTableName, Collection<String> resultTableNames, Collection<String> availableTargetNames) {
-        return resultTableNames.stream().map(o -> getShardingTableAndCreate(logicTableName, o, availableTargetNames)).collect(Collectors.toSet());
+        return resultTableNames.stream().map(o ->{
+            if (availableTargetNames.contains(o)) {
+                return o;
+            }else{
+                return getShardingTableAndCreateSync(logicTableName, o, availableTargetNames);
+            }
+        }).collect(Collectors.toSet());
     }
 
     /**
@@ -102,6 +108,10 @@ public final class TimeShardingAlgorithm implements StandardShardingAlgorithm<Lo
      * @return 确认存在于数据库中的真实表名
      */
     private String getShardingTableAndCreate(String logicTableName, String resultTableName, Collection<String> availableTargetNames) {
+        return getShardingTableAndCreateSync(logicTableName, resultTableName, availableTargetNames);
+    }
+
+    private synchronized String getShardingTableAndCreateSync(String logicTableName, String resultTableName, Collection<String> availableTargetNames) {
         // 缓存中有此表则返回，没有则判断创建
         if (availableTargetNames.contains(resultTableName)) {
             return resultTableName;
@@ -111,7 +121,7 @@ public final class TimeShardingAlgorithm implements StandardShardingAlgorithm<Lo
             if (isSuccess) {
                 // 如果建表成功，需要更新缓存
                 availableTargetNames.add(resultTableName);
-                autoTablesAmount++;
+                autoTablesAmountMap.put(logicTableName,autoTablesAmountMap.get(logicTableName)+1);
                 return resultTableName;
             } else {
                 // 如果建表失败，返回逻辑空表
@@ -162,15 +172,7 @@ public final class TimeShardingAlgorithm implements StandardShardingAlgorithm<Lo
         log.debug(">>>>>>>>>> 【INFO】精确分片，节点配置表名：{}", collection);
         LocalDateTime dateTime = convertToLocalDateTime(preciseShardingValue.getValue());
         String resultTableName = logicTableName + "_" + dateTime.format(TABLE_SHARD_TIME_FORMATTER);
-
-        // 检查是否需要初始化
-        if(autoTablesAmount == 0){
-            List<String> allTableNameBySchema = ShardingAlgorithmTool.getAllTableNameBySchema(logicTableName);
-            collection.clear();
-            collection.addAll(allTableNameBySchema);
-            autoTablesAmount = allTableNameBySchema.size();
-        }
-
+        tablesAmountMap(collection, logicTableName);
         return getShardingTableAndCreate(logicTableName, resultTableName, collection);
     }
 
@@ -199,13 +201,21 @@ public final class TimeShardingAlgorithm implements StandardShardingAlgorithm<Lo
             resultTableNames.add(tableName);
             min = min.plusMinutes(1);
         }
-        if(autoTablesAmount == 0){
+        tablesAmountMap(collection, logicTableName);
+        return getShardingTablesAndCreate(logicTableName, resultTableNames, collection);
+    }
+
+    private void tablesAmountMap(Collection<String> collection, String logicTableName) {
+        if (!autoTablesAmountMap.containsKey(logicTableName)) {
+            //初始化
+            autoTablesAmountMap.put(logicTableName,0);
+        }
+        if(Integer.valueOf(0).equals(autoTablesAmountMap.get(logicTableName))){
             List<String> allTableNameBySchema = ShardingAlgorithmTool.getAllTableNameBySchema(logicTableName);
             collection.clear();
             collection.addAll(allTableNameBySchema);
-            autoTablesAmount = allTableNameBySchema.size();
+            autoTablesAmountMap.put(logicTableName,allTableNameBySchema.size());
         }
-        return getShardingTablesAndCreate(logicTableName, resultTableNames, collection);
     }
 
 
