@@ -87,7 +87,8 @@ public class ShardingAlgorithmTool {
             // 缓存中无此表，则建表并添加缓存
             String sql;
             String oracle = "CREATE TABLE " + resultTableName + " AS SELECT * FROM " + logicTableName + " WHERE 1=2";
-            sql = oracle;
+            String mysql = "CREATE TABLE IF NOT EXISTS `" + resultTableName + "` LIKE `" + logicTableName + "`;";            sql = oracle;
+            sql = mysql;
             return executeReBoolean(sql);
         }
     }
@@ -134,8 +135,9 @@ public class ShardingAlgorithmTool {
     private static List<String> getTableNameList(String tableNamePre){
         List<String> objects = Lists.newArrayList();
         String sql;
+        String mysql = "show TABLES like '" + tableNamePre + TABLE_SPLIT_SYMBOL + "%'";
         String oracle = "SELECT table_name FROM ALL_TABLES WHERE table_name LIKE '" + tableNamePre + "%' and OWNER = '" + dbName + "'";
-        sql = oracle;
+        sql = mysql;
         ResultSet resultSet = executeSql(sql);
         try {
             while (resultSet.next()) {

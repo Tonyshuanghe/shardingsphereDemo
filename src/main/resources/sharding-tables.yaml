@@ -20,7 +20,7 @@ dataSources:
     validationQuery: SELECT 1
   ds1:
     dataSourceClassName: com.zaxxer.hikari.HikariDataSource
-    driverClassName: dm.jdbc.driver.DmDriver
+    driverClassName: com.mysql.cj.jdbc.Driver
     jdbcUrl: jdbc:mysql://localhost:3306/mydb?useUnicode=true&allowMultiQueries=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true
     username: root
     password: root
@@ -38,7 +38,7 @@ rules:
   - !SHARDING
     tables:
       T_TEST:
-        actualDataNodes: ds.T_TEST
+        actualDataNodes: ds.t_test
         tableStrategy:
           standard:
             shardingColumn: created_date
